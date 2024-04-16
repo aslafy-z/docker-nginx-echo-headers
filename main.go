@@ -47,7 +47,8 @@ func main() {
 		panic(err)
 	}
 	if os.Getenv("ECHO_BYTES") != "" {
-		randomString = generateRandomString(strconv.Atoi(os.Getenv("ECHO_BYTES")))
+		bytes, _ := strconv.Atoi(os.Getenv("ECHO_BYTES"))
+		randomString = generateRandomString(bytes)
 	}
 	if os.Getenv("ECHO_DELAY") != "" {
 		delay, _ = strconv.Atoi(os.Getenv("ECHO_DELAY"))

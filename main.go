@@ -49,7 +49,7 @@ func main() {
 		panic(err)
 	}
 	if os.Getenv("ECHO_BYTES") != "" {
-		randomBytes, _ := strconv.Atoi(os.Getenv("ECHO_BYTES"))
+		randomBytes, _ = strconv.Atoi(os.Getenv("ECHO_BYTES"))
 		randomString = generateRandomString(randomBytes)
 	}
 	if os.Getenv("ECHO_DELAY") != "" {

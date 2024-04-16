@@ -50,7 +50,7 @@ func main() {
 		randomString = generateRandomString(strconv.Atoi(os.Getenv("ECHO_BYTES")))
 	}
 	if os.Getenv("ECHO_DELAY") != "" {
-		delay = strconv.Atoi(os.Getenv("ECHO_DELAY"))
+		delay, _ = strconv.Atoi(os.Getenv("ECHO_DELAY"))
 	}
 	listenAddr = os.Getenv("ECHO_ADDR")
 	if os.Getenv("ECHO_ADDR") == "" {

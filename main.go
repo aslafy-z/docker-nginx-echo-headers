@@ -12,6 +12,7 @@ import (
 )
 
 var hostname string
+var randomBytes int
 var randomString string
 var delay int
 var listenAddr string
@@ -33,9 +34,11 @@ func logMiddleware(handler http.Handler) http.Handler {
 }
 
 func echoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprintln(w, randomString)
 	time.Sleep(time.Duration(delay * int(time.Second)))
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprintln(w, fmt.Sprintf("Random bytes: %d", randomBytes))
+	fmt.Fprintln(w, fmt.Sprintf("Delay: %d", delay))
+	fmt.Fprintln(w, randomString)
 	return
 }
 
@@ -46,8 +49,8 @@ func main() {
 		panic(err)
 	}
 	if os.Getenv("ECHO_BYTES") != "" {
-		bytes, _ := strconv.Atoi(os.Getenv("ECHO_BYTES"))
-		randomString = generateRandomString(bytes)
+		randomBytes, _ := strconv.Atoi(os.Getenv("ECHO_BYTES"))
+		randomString = generateRandomString(randomBytes)
 	}
 	if os.Getenv("ECHO_DELAY") != "" {
 		delay, _ = strconv.Atoi(os.Getenv("ECHO_DELAY"))

@@ -1,17 +1,30 @@
 package main
 
 import (
+        "crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 )
 
 var hostname string
-var echoContext bool
+var randomString string
+var delay int
 var listenAddr string
+
+func generateRandomString(length int) string {
+   b := make([]byte, length)
+   _, err := rand.Read(b)
+   if err != nil {
+      panic(err)
+   }
+   return base64.StdEncoding.EncodeToString(b)
+}
 
 func logMiddleware(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -22,24 +35,8 @@ func logMiddleware(handler http.Handler) http.Handler {
 
 func echoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
-	if echoContext {
-		fmt.Fprintln(w, "X-Echo-Hostname:", hostname)
-		fmt.Fprintln(w, "X-Echo-RemoteAddr:", r.RemoteAddr)
-		fmt.Fprintln(w, "X-Echo-Date:", time.Now().String())
-		fmt.Fprintln(w, "X-Echo-Proto:", r.Proto)
-		fmt.Fprintln(w, "X-Echo-Method:", r.Method)
-		fmt.Fprintln(w, "X-Echo-URL:", r.URL)
-	}
-	var headers []string
-	for k, vs := range r.Header {
-		for _, v := range vs {
-			headers = append(headers, fmt.Sprintf("%s: %s", k, v))
-		}
-	}
-	sort.Strings(headers)
-	for _, h := range headers {
-		fmt.Fprintln(w, h)
-	}
+	fmt.Fprintln(w, randomString)
+	time.Sleep(time.Duration(delay * time.Second))
 	return
 }
 
@@ -49,14 +46,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	echoContext = true
-	if os.Getenv("ECHO_CONTEXT") == "false" {
-		echoContext = false
+	if os.Getenv("ECHO_BYTES") != "" {
+		randomString = generateRandomString(strconv.Atoi(os.Getenv("ECHO_BYTES")))
+	}
+	if os.Getenv("ECHO_DELAY") != "" {
+		delay = strconv.Atoi(os.Getenv("ECHO_DELAY"))
 	}
 	listenAddr = os.Getenv("ECHO_ADDR")
 	if os.Getenv("ECHO_ADDR") == "" {
 		listenAddr = ":8080"
 	}
+
 
 	log.Printf("Listening on %s\n", listenAddr)
 

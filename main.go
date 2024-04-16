@@ -34,8 +34,8 @@ func logMiddleware(handler http.Handler) http.Handler {
 }
 
 func echoHandler(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(delay * int(time.Second)))
 	w.Header().Set("Content-Type", "text/plain")
+	time.Sleep(time.Duration(delay * int(time.Second)))
 	fmt.Fprintln(w, fmt.Sprintf("Random bytes: %d", randomBytes))
 	fmt.Fprintln(w, fmt.Sprintf("Delay: %d", delay))
 	fmt.Fprintln(w, randomString)

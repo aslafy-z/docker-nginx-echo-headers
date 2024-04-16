@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 	"time"
 )
@@ -36,7 +35,7 @@ func logMiddleware(handler http.Handler) http.Handler {
 func echoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintln(w, randomString)
-	time.Sleep(time.Duration(delay * time.Second))
+	time.Sleep(time.Duration(delay * int(time.Second)))
 	return
 }
 

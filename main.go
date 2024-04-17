@@ -7,23 +7,43 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"time"
+
+	env "github.com/caarlos0/env/v8"
 )
 
-var hostname string
-var randomBytes int
-var randomString string
-var delay int
-var listenAddr string
+var (
+	
+        echoContext       bool
+	randomBytesCount  int
+	randomBytes       string
+	echoDelay         time.Duration
+	listenAddr        string
+)
 
-func generateRandomString(length int) string {
-   b := make([]byte, length)
+type config struct {
+	ShowContext       bool `env:"ECHO_CONTEXT" envDefault:"false"`
+	RandomBytes       int `env:"ECHO_BYTES" envDefault:"0"`
+	Delay             time.Duration `env:"ECHO_DELAY" envDefault:"0s"`
+	ListenAddress     string `env:"LISTEN_ADDRESS,required" envDefault:":8080"`
+	Debug             bool   `env:"DEBUG" envDefault:"false"`
+}
+
+var (
+	cfg         config
+	hostname    string
+	randomBytes string
+)
+
+func randomBytes(size int) (string, error) {
+   b := make([]byte, size)
    _, err := rand.Read(b)
    if err != nil {
-      panic(err)
+      return nil, err
    }
-   return base64.StdEncoding.EncodeToString(b)
+   return base64.StdEncoding.EncodeToString(b), nil
 }
 
 func logMiddleware(handler http.Handler) http.Handler {
@@ -33,36 +53,56 @@ func logMiddleware(handler http.Handler) http.Handler {
 	})
 }
 
-func echoHandler(w http.ResponseWriter, r *http.Request) {
+func handleRequest(w http.ResponseWriter, r *http.Request) {
+	time.Sleep(time.Duration(cfg.Delay))
 	w.Header().Set("Content-Type", "text/plain")
-	time.Sleep(time.Duration(delay * int(time.Second)))
-	fmt.Fprintln(w, fmt.Sprintf("Random bytes: %d", randomBytes))
-	fmt.Fprintln(w, fmt.Sprintf("Delay: %d", delay))
-	fmt.Fprintln(w, randomString)
+	if echoContext {
+		fmt.Fprintln(w, "X-Echo-Date:", time.Now().String())
+	        fmt.Fprintf(w, "X-Echo-Delay: %s\n", cfg.Delay)
+		fmt.Fprintln(w, "X-Echo-Hostname:", hostname)
+		fmt.Fprintln(w, "X-Echo-Method:", r.Method)
+		fmt.Fprintln(w, "X-Echo-Proto:", r.Proto)
+	        fmt.Fprintf(w, "X-Echo-RandomBytes: %d\n", cfg.RandomBytes)
+		fmt.Fprintln(w, "X-Echo-RemoteAddr:", r.RemoteAddr)
+		fmt.Fprintln(w, "X-Echo-URL:", r.URL)
+	}
+	var headers []string
+	for k, vs := range r.Header {
+		for _, v := range vs {
+			headers = append(headers, fmt.Sprintf("%s: %s", k, v))
+		}
+	}
+	sort.Strings(headers)
+	for _, h := range headers {
+		fmt.Fprintln(w, h)
+	}
+	fmt.Fprintln(w, randomBytes)
 	return
 }
 
+// handleReadinessRequest handles incoming readiness requests
+func handleReadinessRequest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
 func main() {
-	host, err := os.Hostname()
-	hostname = host
-	if err != nil {
-		panic(err)
-	}
-	if os.Getenv("ECHO_BYTES") != "" {
-		randomBytes, _ = strconv.Atoi(os.Getenv("ECHO_BYTES"))
-		randomString = generateRandomString(randomBytes)
-	}
-	if os.Getenv("ECHO_DELAY") != "" {
-		delay, _ = strconv.Atoi(os.Getenv("ECHO_DELAY"))
-	}
-	listenAddr = os.Getenv("ECHO_ADDR")
-	if os.Getenv("ECHO_ADDR") == "" {
-		listenAddr = ":8080"
+	// retrieve configuration
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("error: configuration parsing: %+v\n", err)
 	}
 
+	// cache values
+	hostname, _ = os.Hostname()
+	if cfg.RandomBytes > 0 {
+		randomString, err = randomBytes(cfg.RandomBytes)
+		if err != nil {
+			log.Fatalf("error: generate random bytes: %+v\n", err)
+		}
+	}
 
-	log.Printf("Listening on %s\n", listenAddr)
-
-	http.HandleFunc("/", echoHandler)
-	http.ListenAndServe(listenAddr, logMiddleware(http.DefaultServeMux))
+	log.Printf("Listening on %s\n", cfg.ListenAddr)
+	http.HandleFunc("/-/ready", handleReadinessRequest)
+	http.HandleFunc("/", handleRequest)
+	http.ListenAndServe(cfg.ListenAddress, logMiddleware(http.DefaultServeMux))
 }

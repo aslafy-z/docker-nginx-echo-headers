@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 
+	"github.com/ahuigo/gofnext"
 	env "github.com/caarlos0/env/v8"
 )
 
@@ -21,9 +23,9 @@ type config struct {
 }
 
 var (
-	cfg         config
-	hostname    string
-	randomBytes string
+	cfg                  config
+	hostname             string
+	getRandomBytesCached func(int) string
 )
 
 func getRandomBytes(size int) string {
@@ -55,6 +57,18 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		delay = duration
 	}
+
+	randomBytesLength := cfg.RandomBytesLength
+	if val := r.URL.Query().Get("bytes"); val != "" {
+		length, err := strconv.Atoi(val)
+		if err != nil {
+			http.Error(w, "Invalid bytes value", http.StatusBadRequest)
+			return
+		}
+		randomBytesLength = length
+	}
+	randomBytes := getRandomBytesCached(randomBytesLength)
+
 	time.Sleep(time.Duration(delay))
 	w.Header().Set("Content-Type", "text/plain")
 	if cfg.ShowContext {
@@ -63,7 +77,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "X-Echo-Hostname:", hostname)
 		fmt.Fprintln(w, "X-Echo-Method:", r.Method)
 		fmt.Fprintln(w, "X-Echo-Proto:", r.Proto)
-		fmt.Fprintf(w, "X-Echo-RandomBytesLength: %d\n", cfg.RandomBytesLength)
+		fmt.Fprintf(w, "X-Echo-EffectiveRandomBytesLength: %d\n", randomBytesLength)
 		fmt.Fprintln(w, "X-Echo-RemoteAddr:", r.RemoteAddr)
 		fmt.Fprintln(w, "X-Echo-URL:", r.URL)
 	}
@@ -77,7 +91,9 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	for _, h := range headers {
 		fmt.Fprintln(w, h)
 	}
-	fmt.Fprintln(w, "", "", randomBytes)
+	if randomBytes != "" {
+		fmt.Fprintln(w, "", "", randomBytes)
+	}
 }
 
 // handleReadinessRequest handles incoming readiness requests
@@ -92,9 +108,8 @@ func main() {
 		log.Fatalf("error: configuration parsing: %+v\n", err)
 	}
 
-	// cache values
+	getRandomBytesCached = gofnext.CacheFn1(getRandomBytes)
 	hostname, _ = os.Hostname()
-	randomBytes = getRandomBytes(cfg.RandomBytesLength)
 
 	log.Printf("Listening on %s\n", cfg.ListenAddress)
 	http.HandleFunc("/-/ready", handleReadinessRequest)

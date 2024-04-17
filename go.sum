@@ -1,2 +1,6 @@
+github.com/ahuigo/gofnext v0.0.20 h1:kUvpa5Rezmh6orHudMP3/DrpvgmytBUhq5xcEgDu0CY=
+github.com/ahuigo/gofnext v0.0.20/go.mod h1:vs7VpfzqILdSjoPx4Fx5VXj2fKQhmYJzA93wmO2uTWs=
 github.com/caarlos0/env/v8 v8.0.0 h1:POhxHhSpuxrLMIdvTGARuZqR4Jjm8AYmoi/JKlcScs0=
 github.com/caarlos0/env/v8 v8.0.0/go.mod h1:7K4wMY9bH0esiXSSHlfHLX5xKGQMnkH5Fk4TDSSSzfo=
+github.com/go-redis/redis v6.15.9+incompatible h1:K0pv1D7EQUjfyoMql+r/jZqCLizCGKFlFgcHWWmHQjg=
+github.com/go-redis/redis v6.15.9+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=

@@ -14,10 +14,10 @@ import (
 )
 
 type config struct {
-	ShowContext   bool          `env:"ECHO_CONTEXT" envDefault:"false"`
-	RandomBytes   int           `env:"ECHO_RAND_BYTES" envDefault:"0"`
-	Delay         time.Duration `env:"ECHO_DELAY" envDefault:"0s"`
-	ListenAddress string        `env:"ECHO_ADDR,required" envDefault:":8080"`
+	ShowContext       bool          `env:"ECHO_CONTEXT" envDefault:"false"`
+	RandomBytesLength int           `env:"ECHO_RAND_BYTES" envDefault:"0"`
+	Delay             time.Duration `env:"ECHO_DELAY" envDefault:"0s"`
+	ListenAddress     string        `env:"ECHO_ADDR,required" envDefault:":8080"`
 }
 
 var (
@@ -46,15 +46,24 @@ func logMiddleware(handler http.Handler) http.Handler {
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Duration(cfg.Delay))
+	delay := cfg.Delay
+	if val, ok := r.Header["X-Echo-Delay"]; ok && len(val) > 0 {
+		duration, err := time.ParseDuration(val[0])
+		if err != nil {
+			http.Error(w, "Invalid delay value", http.StatusBadRequest)
+			return
+		}
+		delay = duration
+	}
+	time.Sleep(time.Duration(delay))
 	w.Header().Set("Content-Type", "text/plain")
 	if cfg.ShowContext {
 		fmt.Fprintln(w, "X-Echo-Date:", time.Now().String())
-		fmt.Fprintf(w, "X-Echo-Delay: %s\n", cfg.Delay)
+		fmt.Fprintf(w, "X-Echo-EffectiveDelay: %s\n", delay)
 		fmt.Fprintln(w, "X-Echo-Hostname:", hostname)
 		fmt.Fprintln(w, "X-Echo-Method:", r.Method)
 		fmt.Fprintln(w, "X-Echo-Proto:", r.Proto)
-		fmt.Fprintf(w, "X-Echo-RandomBytes: %d\n", cfg.RandomBytes)
+		fmt.Fprintf(w, "X-Echo-EffectiveRandomBytesLength: %d\n", cfg.RandomBytesLength)
 		fmt.Fprintln(w, "X-Echo-RemoteAddr:", r.RemoteAddr)
 		fmt.Fprintln(w, "X-Echo-URL:", r.URL)
 	}
@@ -69,7 +78,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, h)
 	}
 	fmt.Fprintln(w, "", "", randomBytes)
-	return
 }
 
 // handleReadinessRequest handles incoming readiness requests
@@ -86,7 +94,7 @@ func main() {
 
 	// cache values
 	hostname, _ = os.Hostname()
-	randomBytes = getRandomBytes(cfg.RandomBytes)
+	randomBytes = getRandomBytes(cfg.RandomBytesLength)
 
 	log.Printf("Listening on %s\n", cfg.ListenAddress)
 	http.HandleFunc("/-/ready", handleReadinessRequest)

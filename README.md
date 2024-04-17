@@ -16,3 +16,11 @@ docker run --rm -p 8080:8080 ghcr.io/aslafy-z/echo-headers:latest
 | --- | --- | --- |
 | `ECHO_ADDR` | `:8080` | addr to bind to |
 | `ECHO_CONTEXT` | `true` | show extra context request |
+| `ECHO_DELAY` | `0s` | add extra delay to responses |
+| `ECHO_RAND_BYTES` | `0` | add extra N random bytes to responses |
+
+## Query string
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `delay` | `0s` | add extra delay to responses or override default one |

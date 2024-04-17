@@ -92,7 +92,9 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, h)
 	}
 	if randomBytes != "" {
-		fmt.Fprintln(w, "", "", randomBytes)
+		fmt.Fprintln(w, "")
+		fmt.Fprintln(w, "")
+		fmt.Fprintln(w, randomBytes)
 	}
 }
 

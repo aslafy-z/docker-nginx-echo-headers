@@ -68,7 +68,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 	for _, h := range headers {
 		fmt.Fprintln(w, h)
 	}
-	fmt.Fprintln(w, randomBytes)
+	fmt.Fprintln(w, "", "", randomBytes)
 	return
 }
 

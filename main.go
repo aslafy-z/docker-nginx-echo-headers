@@ -47,8 +47,8 @@ func logMiddleware(handler http.Handler) http.Handler {
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	delay := cfg.Delay
-	if val, ok := r.Header["X-Echo-Delay"]; ok && len(val) > 0 {
-		duration, err := time.ParseDuration(val[0])
+	if val := r.URL.Query().Get("delay"); val != "" {
+		duration, err := time.ParseDuration(val)
 		if err != nil {
 			http.Error(w, "Invalid delay value", http.StatusBadRequest)
 			return
@@ -63,7 +63,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "X-Echo-Hostname:", hostname)
 		fmt.Fprintln(w, "X-Echo-Method:", r.Method)
 		fmt.Fprintln(w, "X-Echo-Proto:", r.Proto)
-		fmt.Fprintf(w, "X-Echo-EffectiveRandomBytesLength: %d\n", cfg.RandomBytesLength)
+		fmt.Fprintf(w, "X-Echo-RandomBytesLength: %d\n", cfg.RandomBytesLength)
 		fmt.Fprintln(w, "X-Echo-RemoteAddr:", r.RemoteAddr)
 		fmt.Fprintln(w, "X-Echo-URL:", r.URL)
 	}

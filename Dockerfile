@@ -1,4 +1,4 @@
-FROM golang:1.21 as builder
+FROM golang:1.24 as builder
 COPY main.go /go/src/echo-server/main.go
 RUN CGO_ENABLED=0 go build -ldflags="-w -s" -o /usr/local/bin/echo-server /go/src/echo-server/main.go
 
